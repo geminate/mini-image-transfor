@@ -27,12 +27,14 @@ class MiniImageTransfor {
         this.startMp3Listener();
     }
 
+    // 启动 Express 服务器
     startExpressServer() {
         this.app.listen(this.port, () => {
             console.log("服务器已启动于 http://localhost:" + this.port + ".");
         });
     }
 
+    // 启动 图片转储 监听
     startImageListener() {
         this.app.post('/image', this.mutipartMiddeware, (req, res) => {
             const imgUrl = this.serverPath + req.files['image'].path.replace("\\", "/");
@@ -41,6 +43,7 @@ class MiniImageTransfor {
         });
     }
 
+    // 启动 语音识别 监听
     startMp3Listener() {
         this.app.post('/mp3', this.mutipartMiddeware, (req, res) => {
             this.transforMp3(req.files['mp3'].path, (filePath) => {
@@ -53,6 +56,7 @@ class MiniImageTransfor {
         });
     }
 
+    // 将 MP3 格式转换为百度接口 可识别的 pcm 格式
     transforMp3(filePath, successCallback) {
         const options = ['-acodec pcm_s16le', '-f s16le', '-ac 1', '-ar 16000'];
         const fileName = uuid.v4() + ".pcm";
@@ -67,17 +71,16 @@ class MiniImageTransfor {
             .save(this.imgPath + "/" + fileName);
     }
 
+    // 调用 百度语音识别接口
     sendBaiduApi(filePath, sendCallBack) {
         const opt = {
             "url": "http://vop.baidu.com/server_api?dev_pid=1536&cuid=******&token=" + this.baiduToken,
-            "file": filePath,//文件位置
-            "param": "file",//文件上传字段名
-            "field": {}
+            "file": filePath,// 文件位置
+            "param": "file",// 文件上传字段名
+            "field": {}// 其他字段
         };
-
-        new postFile(opt).start();
+        new postFile(opt).start(sendCallBack);
     }
-
 }
 
 module.exports = MiniImageTransfor;
