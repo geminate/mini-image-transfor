@@ -12,6 +12,7 @@ class MiniImageTransfor {
         this.ffmpegPath = configs.ffmpegPath;
         this.serverPath = configs.serverPath;
         this.baiduToken = configs.baiduToken;
+        this.retryNum = configs.retryNum;
         this.init();
     }
 
@@ -47,9 +48,11 @@ class MiniImageTransfor {
     startMp3Listener() {
         this.app.post('/mp3', this.mutipartMiddeware, (req, res) => {
             this.transforMp3(req.files['mp3'].path, (filePath) => {
+                console.log('------ START:' + new Date().getTime() + ' ------');
                 console.log('文件转换完成');
-                this.sendBaiduApi(filePath, (data) => {
+                this.sendBaiduApi(filePath, 0, (data) => {
                     console.log("语音识别完成，内容：" + data);
+                    console.log('------ END ------');
                     res.send(data);
                 })
             });
@@ -71,14 +74,26 @@ class MiniImageTransfor {
     }
 
     // 调用 百度语音识别接口
-    sendBaiduApi(filePath, sendCallBack) {
+    sendBaiduApi(filePath, num, sendCallBack) {
         const opt = {
             "url": "http://vop.baidu.com/server_api?dev_pid=1536&cuid=******&token=" + this.baiduToken,
             "file": filePath,// 文件位置
             "param": "file",// 文件上传字段名
             "field": {}// 其他字段
         };
-        new postFile(opt).start(sendCallBack);
+        new postFile(opt).start((data) => {
+            const jsonData = JSON.parse(data);
+            if (jsonData.err_no != 0) {
+                if (num < this.retryNum) {
+                    console.log("第" + num + "次识别失败！" + data);
+                    this.sendBaiduApi(filePath, num + 1, sendCallBack);
+                } else {
+                    sendCallBack(data);
+                }
+            } else {
+                sendCallBack(data);
+            }
+        });
     }
 }
 

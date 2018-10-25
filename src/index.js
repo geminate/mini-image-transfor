@@ -5,6 +5,7 @@ const config = {
     imgPath: './upload',
     serverPath: 'https://kaisrguo.com/hack/',
     baiduToken: '24.695f684b1ef187705cb214aa28550c16.2592000.1542966971.282335-14483285',
+    retryNum: 4,
     ffmpegPath: 'E:\\ffmpeg\\bin\\ffmpeg.exe'
 };
 
