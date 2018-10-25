@@ -2,7 +2,8 @@ import express from 'express';
 import mutipart from 'connect-multiparty';
 import ffmpeg from 'fluent-ffmpeg';
 import uuid from 'uuid';
-import postFile from './postFile'
+import postFile from './postFile';
+import sizeOf from 'image-size';
 
 class MiniImageTransfor {
 
@@ -38,9 +39,10 @@ class MiniImageTransfor {
     // 启动 图片转储 监听
     startImageListener() {
         this.app.post('/image', this.mutipartMiddeware, (req, res) => {
-            const imgUrl = this.serverPath + req.files['image'].path.replace("\\", "/");
+            const imagePath = req.files['image'].path.replace("\\", "/");
+            const imgUrl = this.serverPath + imagePath;
             console.log("图片转储完成，地址：" + imgUrl);
-            res.send(imgUrl);
+            res.send({imgUrl: imgUrl, ...this.getImageSize(imagePath)});
         });
     }
 
@@ -57,6 +59,11 @@ class MiniImageTransfor {
                 })
             });
         });
+    }
+
+    // 获取图片大小
+    getImageSize(imagePath) {
+        return sizeOf(imagePath);
     }
 
     // 将 MP3 格式转换为百度接口 可识别的 pcm 格式
