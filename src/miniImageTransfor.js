@@ -1,12 +1,8 @@
 import express from 'express';
 import mutipart from 'connect-multiparty';
 import ffmpeg from 'fluent-ffmpeg';
-import http from 'http';
-import querystring from 'querystring';
 import uuid from 'uuid';
-import fs from 'fs';
-import path from 'path';
-import mineType from 'mime-types';
+import postFile from './postFile'
 
 class MiniImageTransfor {
 
@@ -14,6 +10,8 @@ class MiniImageTransfor {
         this.port = configs.port;
         this.imgPath = configs.imgPath;
         this.ffmpegPath = configs.ffmpegPath;
+        this.serverPath = configs.serverPath;
+        this.baiduToken = configs.baiduToken;
         this.init();
     }
 
@@ -24,22 +22,31 @@ class MiniImageTransfor {
     }
 
     start() {
+        this.startExpressServer();
+        this.startImageListener();
+        this.startMp3Listener();
+    }
+
+    startExpressServer() {
         this.app.listen(this.port, () => {
-            console.log("Express started on http://localhost:" + this.port + ".");
+            console.log("服务器已启动于 http://localhost:" + this.port + ".");
         });
+    }
 
-        // 接收临时图片
+    startImageListener() {
         this.app.post('/image', this.mutipartMiddeware, (req, res) => {
-            res.send("https://kaisrguo.com/hack/" + req.files['image'].path.replace("\\", "/"));
+            const imgUrl = this.serverPath + req.files['image'].path.replace("\\", "/");
+            console.log("图片转储完成，地址：" + imgUrl);
+            res.send(imgUrl);
         });
+    }
 
-        // 转换音频文件
+    startMp3Listener() {
         this.app.post('/mp3', this.mutipartMiddeware, (req, res) => {
             this.transforMp3(req.files['mp3'].path, (filePath) => {
                 console.log('文件转换完成');
-                // const base64 = this.transforBase64(filePath);
                 this.sendBaiduApi(filePath, (data) => {
-                    console.log(data);
+                    console.log("语音识别完成，内容：" + data);
                     res.send(data);
                 })
             });
@@ -60,93 +67,17 @@ class MiniImageTransfor {
             .save(this.imgPath + "/" + fileName);
     }
 
-    getfield(field, value) {
-        return 'Content-Disposition: form-data; name="' + field + '"\r\n\r\n' + value + '\r\n';
-    }
-
-    getfieldHead(field, filename) {
-        var fileFieldHead = 'Content-Disposition: form-data; name="' + field + '"; filename="' + filename + '"\r\n' + 'Content-Type: ' + 'audio/pcm' + '\r\n\r\n';
-        return fileFieldHead;
-    }
-
-    getBoundary() {
-        var max = 9007199254740992;
-        var dec = Math.random() * max;
-        var hex = dec.toString(36);
-        var boundary = hex;
-        return boundary;
-    }
-
-    getBoundaryBorder(boundary) {
-        return '--' + boundary + '\r\n';
-    }
-
-    fieldPayload(opts) {
-        var payload = [];
-        for (var id in opts.field) {
-            payload.push(getfield(id, opts.field[id]));
-        }
-        payload.push("");
-        return payload.join(this.getBoundaryBorder(opts.boundary));
-    }
-
-    postRequest(opts) {
-        this.filereadstream(opts, (buffer) => {
-            var options = require('url').parse(opts.url);
-            var Header = {};
-            var h = this.getBoundaryBorder(opts.boundary);
-            var e = this.fieldPayload(opts);
-            var a = this.getfieldHead(opts.param, opts.file);
-            var d = "\r\n" + h;
-            Header["Content-Length"] = Buffer.byteLength(h + e + a + d) + buffer.length;
-            Header["Content-Type"] = 'audio/pcm;rate=16000';
-            options.headers = Header;
-            options.method = 'POST';
-            var req = http.request(options, (res) => {
-                var data = '';
-                res.on('data', (chunk) => {
-                    data += chunk;
-                });
-                res.on('end', () => {
-                    console.log(res.statusCode)
-                    console.log(data);
-                });
-            });
-            req.write(h + e + a);
-
-            req.write(buffer);
-            req.end(d);
-        });
-    }
-
-    filereadstream(opts, fn) {
-        var readstream = fs.createReadStream(opts.file, {flags: 'r', encoding: null});
-        var chunks = [];
-        var length = 0;
-        readstream.on('data', (chunk) => {
-            length += chunk.length;
-            chunks.push(chunk);
-        });
-        readstream.on('end', () => {
-            var buffer = new Buffer(length);
-            for (var i = 0, pos = 0, size = chunks.length; i < size; i++) {
-                chunks[i].copy(buffer, pos);
-                pos += chunks[i].length;
-            }
-            fn(buffer);
-        });
-    }
-
     sendBaiduApi(filePath, sendCallBack) {
-        var opt = {
-            "url": "http://vop.baidu.com/server_api?dev_pid=1536&cuid=******&token=24.695f684b1ef187705cb214aa28550c16.2592000.1542966971.282335-14483285",//url
+        const opt = {
+            "url": "http://vop.baidu.com/server_api?dev_pid=1536&cuid=******&token=" + this.baiduToken,
             "file": filePath,//文件位置
             "param": "file",//文件上传字段名
-            "field": {},
-            "boundary": "----WebKitFormBoundary" + this.getBoundary()
-        }
-        this.postRequest(opt);
+            "field": {}
+        };
+
+        new postFile(opt).start();
     }
+
 }
 
 module.exports = MiniImageTransfor;
