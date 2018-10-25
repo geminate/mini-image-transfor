@@ -81,17 +81,20 @@ class MiniImageTransfor {
             "param": "file",// 文件上传字段名
             "field": {}// 其他字段
         };
-        new postFile(opt).start((data) => {
-            const jsonData = JSON.parse(data);
-            if (jsonData.err_no != 0) {
-                if (num < this.retryNum) {
-                    console.log("第" + num + "次识别失败！" + data);
-                    this.sendBaiduApi(filePath, num + 1, sendCallBack);
-                } else {
-                    sendCallBack(data);
-                }
+        const fetchArray = [];
+        for (let i = 0; i <= this.retryNum; i++) {
+            fetchArray.push(new postFile(opt).start());
+        }
+        const fetchPromise = Promise.all(fetchArray);
+        fetchPromise.then((result) => {
+            console.log(result);
+            const successArray = result.filter((item) => {
+                return JSON.parse(item).err_no == 0;
+            });
+            if (successArray.length > 0) {
+                sendCallBack(successArray[0]);
             } else {
-                sendCallBack(data);
+                sendCallBack(result[0]);
             }
         });
     }
