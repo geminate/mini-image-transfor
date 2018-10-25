@@ -66,7 +66,6 @@ class MiniImageTransfor {
             .on('end', () => successCallback(this.imgPath + "/" + fileName))
             .on('error', (err) => {
                 console.log('错误: ' + err.message);
-                res.send('错误: ' + err.message);
             })
             .save(this.imgPath + "/" + fileName);
     }
