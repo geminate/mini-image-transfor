@@ -11,8 +11,8 @@ class PostFile {
         this.field = configs.field;
     }
 
-    start() {
-        this.postRequest();
+    start(sendCallBack) {
+        this.postRequest(sendCallBack);
     }
 
     // 发起 文件请求
