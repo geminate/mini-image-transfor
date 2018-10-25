@@ -81,6 +81,8 @@ class MiniImageTransfor {
             "param": "file",// 文件上传字段名
             "field": {}// 其他字段
         };
+
+        // 并发轮询
         const fetchArray = [];
         for (let i = 0; i <= this.retryNum; i++) {
             fetchArray.push(new postFile(opt).start());
