@@ -1,7 +1,7 @@
 {
   "name": "mini-image-transfor",
   "version": "1.0.0",
-  "description": "",
+  "description": "MoJing project backend.",
   "main": "index.js",
   "scripts": {
     "watch": "babel src -d dist -w"
@@ -11,7 +11,7 @@
     "url": "git+https://github.com/geminate/mini-image-transfor.git"
   },
   "author": "",
-  "license": "ISC",
+  "license": "MIT",
   "bugs": {
     "url": "https://github.com/geminate/mini-image-transfor/issues"
   },
